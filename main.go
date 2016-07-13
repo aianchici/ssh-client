@@ -12,7 +12,18 @@ import (
 
 	"golang.org/x/crypto/ssh"
 	"golang.org/x/crypto/ssh/agent"
+
+	"github.com/codegangsta/cli"
 )
+
+func main() {
+	app := cli.NewApp()
+	app.Name = "ssh-client"
+	app.Usage = "ssh-client [user@]server[:port]"
+	app.Action = sshConnection
+
+	app.Run(os.Args)
+}
 
 func sshAgent() ssh.AuthMethod {
 	if sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
@@ -21,22 +32,21 @@ func sshAgent() ssh.AuthMethod {
 	return nil
 }
 
-func main() {
-	fmt.Print("Remote host? (Default=localhost): ")
-	server := scanConfig()
-	if server == "" {
-		server = "localhost"
-	}
-	fmt.Print("Port? (Default=22): ")
-	port := scanConfig()
-	if port == "" {
-		port = "22"
-	}
+func sshConnection(c *cli.Context) error {
+	destination := c.Args().Get(0)
+	parts := strings.Split(destination, "@")
 	user, err := user.Current()
-	fmt.Printf("User? (Default=%s): ", user.Username)
-	username := scanConfig()
-	if username == "" {
-		username = user.Username
+	username := user.Username
+	port := "22"
+	var server string
+	if len(parts) < 2 {
+		server = parts[0]
+	} else {
+		username = parts[0]
+		server = parts[1]
+		if len(parts) > 2 {
+			port = parts[2]
+		}
 	}
 
 	key, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa", user.HomeDir))
@@ -107,7 +117,7 @@ func main() {
 		}
 		fmt.Fprint(in, str)
 	}
-
+	return nil
 }
 
 func scanConfig() string {
