@@ -5,17 +5,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net"
 	"os"
 	"os/user"
 	"strings"
 
 	"golang.org/x/crypto/ssh"
+	"golang.org/x/crypto/ssh/agent"
 )
 
-type password string
-
-func (p password) Password(user string) (password string, err error) {
-	return string(p), nil
+func sshAgent() ssh.AuthMethod {
+	if sshAgent, err := net.Dial("unix", os.Getenv("SSH_AUTH_SOCK")); err == nil {
+		return ssh.PublicKeysCallback(agent.NewClient(sshAgent).Signers)
+	}
+	return nil
 }
 
 func main() {
@@ -55,8 +58,8 @@ func main() {
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
-			// Use the PublicKeys method for remote authentication.
 			ssh.PublicKeys(signer),
+			sshAgent(),
 		},
 	}
 
