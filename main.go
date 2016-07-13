@@ -39,11 +39,6 @@ func main() {
 		username = user.Username
 	}
 
-	// A public key may be used to authenticate against the remote
-	// server by using an unencrypted PEM-encoded private key file.
-	//
-	// If you have an encrypted private key, the crypto/x509 package
-	// can be used to decrypt it.
 	key, err := ioutil.ReadFile(fmt.Sprintf("%s/.ssh/id_rsa", user.HomeDir))
 	if err != nil {
 		log.Fatalf("unable to read private key: %v", err)
@@ -104,6 +99,12 @@ func main() {
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		str, _ := reader.ReadString('\n')
+		if len(str) == 0 {
+			fmt.Println("")
+			break
+		} else if strings.Compare(str, "exit\n") == 0 {
+			break
+		}
 		fmt.Fprint(in, str)
 	}
 
